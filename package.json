@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "bin" : {
-    "npm2es" : "bin/npm2es.js"
+  "bin": {
+    "npm2es": "bin/npm2es.js"
   },
   "repository": {
     "type": "git",
@@ -27,6 +27,8 @@
     "follow": "~0.9.0",
     "request": "~2.16.6",
     "optimist": "~0.3.7",
-    "npm-normalize" : "*"
+    "npm-normalize": "*",
+    "JSONStream": "~0.6.4",
+    "through": "~2.2.7"
   }
 }

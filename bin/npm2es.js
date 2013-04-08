@@ -7,18 +7,83 @@ if (!argv.couch || !argv.es) {
 
 var request = require('request'),
     follow = require('follow'),
-    normalize = require('npm-normalize');
+    normalize = require('npm-normalize'),
+    JSONStream = require('JSONStream'),
+    through = require('through'),
+    since = argv.since || 0;
 
+if (!since) {
+  request({
+    url: argv.couch,
+    json: true
+  }, function(e,r,obj) {
+    since = obj.update_seq;
+    indexAllPackages();
+  });
+} else {
+  beginFollowing();
+}
 
-var addDoc = function(p) {
+function indexAllPackages() {
+  // Get all docs
+  var stream = request.get(argv.couch + '/_all_docs?include_docs=true');
+  stream.pipe(JSONStream.parse('rows.*.doc')).pipe(through(function(doc) {
+    this.pause()
+    addDoc(doc, function() {
+      this.resume();
+    }.bind(this));
+  }));
+
+  stream.on('end', beginFollowing);
+};
+
+function beginFollowing() {
+  console.log('BEGIN FOLLOWING @', since);
+
+  follow({
+    db: argv.couch,
+    since: since,
+    include_docs: true
+  },  function(err, change) {
+
+    if (err) {
+      return console.error('ERROR', err);
+    }
+
+    if (!change.id) {
+      return console.log('SKIP', change);
+    }
+
+    last = change.seq;
+
+    // Remove the document from the cache and from solr
+    if (change.deleted) {
+      request.del(argv.es + '/package/' + change.id, function(err) {
+        if (!err) {
+          console.log('DELETED', change.id);
+        } else {
+          console.error('ERROR', 'could not delete document', err);
+        }
+      });
+
+    // Add the doument to leveldb cache and solr
+    } else {
+      addDoc(change.doc);
+    }
+  });
+};
+
+function addDoc(p, fn) {
   var id = p.id;
   p = normalize(p);
 
   if (!p || !p.name) {
-    return console.log('SKIP', id);
+    console.log('SKIP', id);
+    fn && fn();
+    return;
   }
 
-  // SOLR
+  // elastic search
   request.put({
     url: argv.es + '/package/' + p.name ,
     json: {
@@ -40,35 +105,7 @@ var addDoc = function(p) {
     } else {
       console.log('ADD', p.name);
     }
+    fn && fn(e);
   });
 };
 
-follow({
-  db: argv.couch,
-  since: 0,
-  include_docs: true
-},  function(err, change) {
-
-  if (err) {
-    return console.error('ERROR', err);
-  }
-
-  if (!change.id) {
-    return console.log('SKIP', change);
-  }
-
-  // Remove the document from the cache and from solr
-  if (change.deleted) {
-    request.del(argv.es + '/package/' + change.id, function(err) {
-      if (!err) {
-        console.log('DELETED', change.id);
-      } else {
-        console.error('ERROR', 'could not delete document', err);
-      }
-    });
-
-  // Add the doument to leveldb cache and solr
-  } else {
-    addDoc(change.doc);
-  }
-});
