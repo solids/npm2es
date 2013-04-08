@@ -2,20 +2,20 @@
 
 var argv = require('optimist').argv;
 if (!argv.couch || !argv.es) {
-  return console.log('USAGE: node watch.js --couch="<url to couch>" --es="<url to elasticsearch>"');
+  return console.log('USAGE: npm2es --couch="<url to couch>" --es="<url to elasticsearch>"');
 }
 
 var request = require('request'),
     follow = require('follow'),
-    normalize = require('npm-normalize'),
-    url = require('url'),
-    extend = require('extend');
+    normalize = require('npm-normalize');
 
-var addDoc = function(p, cache) {
+
+var addDoc = function(p) {
+  var id = p.id;
   p = normalize(p);
+
   if (!p || !p.name) {
-    process.stdout.write('E');
-    return;
+    return console.log('SKIP', id);
   }
 
   // SOLR
@@ -36,10 +36,9 @@ var addDoc = function(p, cache) {
     }
   }, function(e, r, b) {
     if (e) {
-      console.log('FAIL', e, r, b);
-      process.exit();
+      console.error('FAIL', e, r, b);
     } else {
-      process.stdout.write('+')
+      console.log('ADD', p.name);
     }
   });
 };
@@ -49,25 +48,24 @@ follow({
   since: 0,
   include_docs: true
 },  function(err, change) {
-  process.stdout.write('.');
+
   if (err) {
-    throw err;
+    return console.error('ERROR', err);
   }
 
   if (!change.id) {
-    return;
+    return console.log('SKIP', change);
   }
 
   // Remove the document from the cache and from solr
   if (change.deleted) {
     request.del(argv.es + '/package/' + change.id, function(err) {
       if (!err) {
-        process.stdout.write('-');
+        console.log('DELETED', change.id);
       } else {
-        console.log('ERROR: could not delete solr document', err);
+        console.error('ERROR', 'could not delete document', err);
       }
     });
-    process.stdout.write('D');
 
   // Add the doument to leveldb cache and solr
   } else {
