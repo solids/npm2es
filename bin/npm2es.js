@@ -74,7 +74,6 @@ function beginFollowing() {
 };
 
 function addDoc(p, fn) {
-  var id = p.id;
   p = normalize(p);
 
   if (!p || !p.name) {
@@ -83,29 +82,46 @@ function addDoc(p, fn) {
     return;
   }
 
-  // elastic search
-  request.put({
-    url: argv.es + '/package/' + p.name ,
-    json: {
-      id : p.name,
-      name : p.name,
-      description: p.description || '',
-      readme: p.readme || '',
-      homepage: p.homepage || '',
-      version: p.version || '',
-      keywords: p.keywords || [],
-      author: p.author,
-      license: p.license || [],
-      modified: p.modified,
-      created: p.created
-    }
-  }, function(e, r, b) {
-    if (e) {
-      console.error('FAIL', e, r, b);
+  request.get({
+    url: argv.es + '/package/' + p.name,
+    json: true
+  }, function(e,b, obj) {
+
+    // follow gives us an update the the same document 2 times
+    // 1) for the actual package.json update
+    // 2) for the tarball
+    // skip a re-index for #2
+    if (!e && obj && obj._source && obj._source.version == p.version) {
+      fn && fn()
+      return;
     } else {
-      console.log('ADD', p.name);
+
+      // elastic search
+      request.put({
+        url: argv.es + '/package/' + p.name ,
+        json: {
+          id : p.name,
+          name : p.name,
+          description: p.description || '',
+          readme: p.readme || '',
+          homepage: p.homepage || '',
+          version: p.version || '',
+          keywords: p.keywords || [],
+          author: p.author,
+          license: p.license || [],
+          modified: p.modified,
+          created: p.created
+        }
+      }, function(e, r, b) {
+        if (e) {
+          console.error('FAIL', e, r, b);
+        } else {
+          console.log('ADD', p.name);
+        }
+        fn && fn(e);
+      });
     }
-    fn && fn(e);
   });
+
 };
 
