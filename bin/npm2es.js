@@ -73,11 +73,11 @@ function beginFollowing() {
   });
 };
 
-function addDoc(p, fn) {
-  p = normalize(p);
+function addDoc(doc, fn) {
+  p = normalize(doc);
 
   if (!p || !p.name) {
-    console.log('SKIP', id);
+    console.log('SKIP', doc._id);
     fn && fn();
     return;
   }
