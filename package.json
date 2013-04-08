@@ -1,0 +1,32 @@
+{
+  "name": "npm2es",
+  "version": "0.1.0",
+  "description": "push npm package metadata into elasticsearch for querying",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin" : {
+    "npm2es" : "bin/npm2es.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/solids/npm2es.git"
+  },
+  "keywords": [
+    "npm",
+    "elasticsearch",
+    "es",
+    "search",
+    "packages"
+  ],
+  "author": "Elijah Insua <tmpvar@gmail.com>",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "dependencies": {
+    "follow": "~0.9.0",
+    "request": "~2.16.6",
+    "optimist": "~0.3.7",
+    "npm-normalize" : "*"
+  }
+}
