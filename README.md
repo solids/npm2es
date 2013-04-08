@@ -8,8 +8,11 @@ push npm package metadata into elasticsearch for querying
 
 # use
 
-
 `USAGE: npm2es --couchdb="http://host:port/db" --es="http://host:port/index"`
+
+## optional
+
+  `npm2es` also takes a `--since=<seq number>` command line argument incase you want to skip a full re-index
 
 ## example
 
@@ -17,6 +20,7 @@ push npm package metadata into elasticsearch for querying
 
 This will attach to the provided couchdb's `_changes` feed and automatically put every
 package into elasticsearch for indexing.  This script will run for as long as you let it, automatically applying updates to the search index.
+
 
 # License
 
