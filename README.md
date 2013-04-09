@@ -21,6 +21,15 @@ push npm package metadata into elasticsearch for querying
 This will attach to the provided couchdb's `_changes` feed and automatically put every
 package into elasticsearch for indexing.  This script will run for as long as you let it, automatically applying updates to the search index.
 
+# running the tests
+
+First off, you'll want the following installed
+
+  * `couchdb` (i.e. `which couchdb` should work)
+  * `java` (i.e. `which java` should should)
+  * `mocha` (`npm install -g mocha`)
+
+Now we can run the test, just run `npm test`
 
 # License
 

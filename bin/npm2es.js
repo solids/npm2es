@@ -10,7 +10,12 @@ var request = require('request'),
     normalize = require('npm-normalize'),
     JSONStream = require('JSONStream'),
     through = require('through'),
+    seq = require('../lib/seq'),
     since = argv.since || 0;
+
+if (!since) {
+  since = seq.load();
+}
 
 if (!since) {
   request({

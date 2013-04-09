@@ -4,7 +4,7 @@
   "description": "push npm package metadata into elasticsearch for querying",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha test/test.js"
   },
   "bin": {
     "npm2es": "bin/npm2es.js"
@@ -30,5 +30,9 @@
     "npm-normalize": "*",
     "JSONStream": "~0.6.4",
     "through": "~2.2.7"
+  },
+  "devDependencies": {
+    "mocha": "~1.9.0",
+    "rimraf": "~2.1.4"
   }
 }
