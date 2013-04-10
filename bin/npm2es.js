@@ -35,17 +35,27 @@ function indexAllPackages() {
   var stream = request.get(argv.couch + '/_all_docs?include_docs=true');
   stream.pipe(JSONStream.parse('rows.*.doc')).pipe(through(function(doc) {
     this.pause()
-    elasticsearch.add(argv.es, doc, function() {
+    elasticsearch.add(argv.es, doc, function(e, o) {
+      if (e) {
+        console.log(e.message);
+      } else {
+        console.log('ADD', o.name);
+      }
+
       this.resume();
     }.bind(this));
   }));
 
-  stream.on('end', beginFollowing);
+  stream.on('end', function() {
+    seq.save(since)
+    beginFollowing();
+  });
 };
 
 function beginFollowing() {
   console.log('BEGIN FOLLOWING @', since);
 
+  var last = since;
   follow({
     db: argv.couch,
     since: since,
@@ -60,9 +70,12 @@ function beginFollowing() {
       return console.log('SKIP', change);
     }
 
-    last = change.seq;
+    if (last + 1000 < change.seq) {
+      last = change.seq;
+      seq.save(last);
+    }
 
-    // Remove the document from the cache and from solr
+    // Remove the document elasticsearch
     if (change.deleted) {
       elasticsearch.remove(argv.es, change.id, function(err) {
         if (!err) {
@@ -72,9 +85,15 @@ function beginFollowing() {
         }
       });
 
-    // Add the doument to leveldb cache and solr
+    // Add the doument to elasticsearch
     } else {
-      elasticsearch.add(argv.es, change.doc);
+      elasticsearch.add(argv.es, change.doc, function(e, o) {
+        if (e) {
+          console.error(e.message);
+        } else {
+          console.log('ADD', o.name);
+        }
+      });
     }
   });
 };
