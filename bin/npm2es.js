@@ -24,7 +24,6 @@ if (typeof since === 'undefined') {
     since = 0;
   }
 } else {
-  console.log('saving', since)
   fs.writeFileSync(seqFile, since);
 }
 
@@ -46,8 +45,6 @@ follow({
 
   var that = this;
   this.pause();
-
-
 
   if (!change.id) {
     return console.log('SKIP', change);
@@ -101,12 +98,26 @@ follow({
       } else {
         obj = obj || {};
 
+        if (p.dependencies) {
+          p.dependencies = Object.keys(p.dependencies);
+        }
+
+        if (p.devDependencies) {
+          p.devDependencies = Object.keys(p.devDependencies);
+        }
+
+        if (p.time) {
+          delete p.time;
+        }
+
         request.put({
           url: argv.es + '/package/' + p.name,
           json: extend(obj._source || {}, p)
         }, function(e, r, b) {
           if (e) {
             console.error(e.message);
+          } else if (b.error) {
+            console.error(b.error);
           } else {
             console.log('ADD', p.name, r.statusCode, b);
           }

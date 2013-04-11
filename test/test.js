@@ -18,7 +18,9 @@ var proc = {
 var launch = function(args) {
   args = args || [];
   args.unshift();
-  return spawn(__dirname + '/../bin/npm2es.js', args, { stdio: 'pipe' });
+  var npm2es = spawn(__dirname + '/../bin/npm2es.js', args, { stdio: 'pipe' });
+  npm2es.stderr.pipe(process.stdout);
+  return npm2es;
 };
 
 
@@ -70,8 +72,8 @@ var prepareElasticSearch = function(reset, fn) {
 
 test('ensure since is written to disk when --since is provided', function(t) {
   var p = launch([
-    '--couch=blarg',
-    '--es=blarg',
+    '--couch=http://blarg',
+    '--es=http://blarg',
     '--since=100',
     '--seq='+ seqPath
   ]);
@@ -112,12 +114,15 @@ test('since is written every X _changes', function(t) {
 
       var tick = setInterval(function() {
         fs.readFile(seqPath, function(e, d) {
+
           if (e) return;
 
           if (parseInt(d.toString(), 10) === o.update_seq-1) {
+            p.kill();
             proc.kill();
             clearInterval(tick);
             server.close();
+            fs.unlinkSync(seqPath);
             t.end();
           }
         });
@@ -155,6 +160,7 @@ test('index all changes', function(t) {
               json: true
             }, function(e, r, o) {
               if (o && o.count === registry.doc_count) {
+                p.kill();
                 couch.kill();
                 elasticsearch.kill();
                 t.end();
