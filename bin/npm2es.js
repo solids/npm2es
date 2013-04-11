@@ -2,17 +2,30 @@
 
 var argv = require('optimist').argv;
 if (!argv.couch || !argv.es) {
-  return console.log('USAGE: npm2es --couch="<url to couch>" --es="<url to elasticsearch>"');
+  return console.log('USAGE: npm2es --couch="<url to couch>" --es="<url to elasticsearch>" [--seq="/path/to/.seq"] [--interval=1000]');
 }
 
 var follow = require('follow'),
     normalize = require('npm-normalize'),
-    seq = require('../lib/seq'),
-    elasticsearch = require('../lib/elasticsearch'),
-    since = argv.since;
+    request = require('request'),
+    fs = require('fs'),
+    path = require('path'),
+    extend = require('extend'),
+    since = argv.since,
+    interval = argv.interval || 1000,
+    seqFile = argv.seq || path.join(process.env.HOME,'.npm2es-seq');
 
 if (typeof since === 'undefined') {
-  since = seq.load() || 0;
+  try {
+    var contents = fs.readFileSync(seqFile).toString();
+    since = parseInt(contents, 10);
+    // TODO: NaN, non-existant file, etc
+  } catch (e) {
+    since = 0;
+  }
+} else {
+  console.log('saving', since)
+  fs.writeFileSync(seqFile, since);
 }
 
 console.log('BEGIN FOLLOWING @', since);
@@ -23,30 +36,37 @@ follow({
   since: since,
   include_docs: true
 },  function(err, change) {
+  if (err) {
+    return console.error('ERROR:', err.message, argv.couch);
+  }
+
+  if (!change) {
+    return;
+  }
 
   var that = this;
   this.pause();
 
-  if (err) {
-    return console.error('ERROR', err);
-  }
+
 
   if (!change.id) {
     return console.log('SKIP', change);
   }
 
-  if (last + 1000 < change.seq) {
+  if (last + interval < change.seq) {
     last = change.seq;
-    seq.save(last, function(e) {
+    fs.writeFile(seqFile, last, function(e) {
       if (e) {
         console.error('ERROR', 'could not save latest sequence');
       }
+
+      console.log('SYNC', last);
     });
   }
 
   // Remove the document elasticsearch
   if (change.deleted) {
-    elasticsearch.remove(argv.es, change.id, function(err) {
+    request.del(argv.es + '/package/' + change.id, function(err) {
       if (!err) {
         console.log('DELETED', change.id);
       } else {
@@ -57,13 +77,42 @@ follow({
 
   // Add the doument to elasticsearch
   } else {
-    elasticsearch.add(argv.es, change.doc, function(e, o) {
-      if (e) {
-        console.error(e.message);
-      } else {
-        console.log('ADD', o.name);
-      }
+
+    var p = normalize(change.doc);
+
+    if (!p || !p.name) {
+      console.log('SKIP: ' + change.doc._id);
       that.resume();
+      return;
+    }
+
+    request.get({
+      url: argv.es + '/package/' + p.name,
+      json: true
+    }, function(e,b, obj) {
+
+      // follow gives us an update of the same document 2 times
+      // 1) for the actual package.json update
+      // 2) for the tarball
+      // skip a re-index for #2
+      if (!e && obj && obj._source && obj._source.version === p.version) {
+        console.log('SKIP VERSION: ' + change.doc._id);
+        that.resume();
+      } else {
+        obj = obj || {};
+
+        request.put({
+          url: argv.es + '/package/' + p.name,
+          json: extend(obj._source || {}, p)
+        }, function(e, r, b) {
+          if (e) {
+            console.error(e.message);
+          } else {
+            console.log('ADD', p.name, r.statusCode, b);
+          }
+          that.resume();
+        });
+      }
     });
   }
 });
