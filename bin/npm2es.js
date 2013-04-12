@@ -119,7 +119,7 @@ follow({
           } else if (b.error) {
             console.error(b.error);
           } else {
-            console.log('ADD', p.name, r.statusCode, b);
+            console.log('ADD', p.name, r.statusCode);
           }
           that.resume();
         });
