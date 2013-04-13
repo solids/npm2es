@@ -12,11 +12,12 @@ var follow = require('follow'),
     path = require('path'),
     extend = require('extend'),
     since = argv.since,
-    interval = argv.interval || 1000;
+    interval = argv.interval || 1000,
+    seqUrl = argv.es + '/config/sequence';
 
 if (typeof since === 'undefined') {
   request.get({
-    url : argv.es + '/config/sequence',
+    url : seqUrl,
     json: true
   }, function(e, r, o) {
 
@@ -30,7 +31,7 @@ if (typeof since === 'undefined') {
 
 } else {
   request.put({
-    url : argv.es + '/config/sequence',
+    url : seqUrl,
     json : {
       value: since
     }
@@ -63,7 +64,7 @@ function beginFollowing() {
     if (last + interval < change.seq) {
       last = change.seq;
       request.put({
-        url : argv.es + '/config/sequence',
+        url : seqUrl,
         json : {
           value: last
         }
