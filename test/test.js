@@ -7,13 +7,8 @@ var spawn = require('child_process').spawn,
     request = require('request'),
     TMP_DIR = __dirname + '/tmp',
     http = require('http'),
-    assert = require('assert'),
-    seqPath = __dirname + '/.seq';
+    assert = require('assert');
 
-var proc = {
-  es : null,
-  couch : null
-};
 
 var launch = function(args) {
   args = args || [];
@@ -46,6 +41,7 @@ var prepareCouch = function(fn) {
 
 var prepareElasticSearch = function(reset, fn) {
   var begin = function() {
+
     var es = spawn(__dirname + '/support/elasticsearch-0.20.6/bin/elasticsearch', ['-f'], {
       stdio: 'pipe'
     });
@@ -70,39 +66,65 @@ var prepareElasticSearch = function(reset, fn) {
   }
 };
 
-test('ensure since is written to disk when --since is provided', function(t) {
-  var p = launch([
-    '--couch=http://blarg',
-    '--es=http://blarg',
-    '--since=100',
-    '--seq='+ seqPath
-  ]);
+test('ensure since is written when --since is provided', function(t) {
+  prepareElasticSearch(true, function(e, elasticsearch) {
+    var p = launch([
+      '--couch=http://blarg',
+      '--es=http://localhost:10002/npm',
+      '--since=100'
+    ]);
 
-  p.on('close', function() {
-    t.equal(fs.readFileSync(seqPath).toString(), '100');
-    fs.unlinkSync(seqPath);
-    p.kill();
-    t.end();
+    p.on('close', function() {
+
+      request.get({
+        url: "http://localhost:10002/npm/config/sequence",
+        json : true
+      }, function(e, r, o) {
+        elasticsearch.kill();
+        t.equal(o._source.value, 100);
+        p.kill();
+        t.end();
+      });
+    });
   });
 });
 
 
 test('since is written every X _changes', function(t) {
   prepareCouch(function(e, proc) {
-
     t.ok(!e);
     t.ok(proc);
 
+    var lastSeq = 0;
     var server = http.createServer(function(req, res) {
-      res.writeHead(200);
-      res.end('{}');
+      if (req.url === '/npm/config/sequence') {
+        res.writeHead(200);
+        var data = '';
+        req.on('data', function(chunk) {
+          data += chunk.toString();
+        });
+
+        req.on('end', function() {
+          try {
+            var o = JSON.parse(data);
+            lastSeq = o.value;
+          } catch (e) {}
+          res.end('{ "ok" : true }');
+        });
+      } else if (req.method.toLowerCase() === 'put'){
+        res.writeHead(200);
+        res.end('{ "ok" : true }');
+      } else {
+        res.writeHead(404);
+        res.end('{}');
+      }
     });
-    server.listen(10002);
+
+    server.listen(10003);
 
     var p = launch([
       '--couch=http://localhost:10001/registry',
-      '--es=http://localhost:10002/go',
-      '--seq='+ seqPath,
+      '--es=http://localhost:10003/npm',
       '--since=0',
       '--interval=1'
     ]);
@@ -113,20 +135,14 @@ test('since is written every X _changes', function(t) {
     }, function(e, r, o) {
 
       var tick = setInterval(function() {
-        fs.readFile(seqPath, function(e, d) {
-
-          if (e) return;
-
-          if (parseInt(d.toString(), 10) === o.update_seq-1) {
-            p.kill();
-            proc.kill();
-            clearInterval(tick);
-            server.close();
-            fs.unlinkSync(seqPath);
-            t.end();
-          }
-        });
-      }, 50);
+        if (lastSeq === o.update_seq-1) {
+          p.kill();
+          proc.kill();
+          clearInterval(tick);
+          server.close();
+          t.end();
+        }
+      }, 500);
     })
   });
 });
@@ -138,7 +154,7 @@ test('index all changes', function(t) {
     prepareElasticSearch(true, function(e, elasticsearch) {
       t.ok(!e);
 
-      request.del('http://localhost:9200/npm/package', function() {
+      request.del('http://localhost:10002/npm/package', function() {
 
         request.get({
           url: 'http://localhost:10001/registry',
@@ -147,16 +163,14 @@ test('index all changes', function(t) {
 
           var p = launch([
             '--couch=http://localhost:10001/registry',
-            '--es=http://localhost:9200/npm',
-            '--seq='+ seqPath,
+            '--es=http://localhost:10002/npm',
             '--since=0',
             '--interval=100'
           ]);
 
-
           setTimeout(function wait() {
             request.get({
-              url: 'http://localhost:9200/npm/package/_count',
+              url: 'http://localhost:10002/npm/package/_count',
               json: true
             }, function(e, r, o) {
               if (o && o.count === registry.doc_count) {
