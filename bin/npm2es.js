@@ -140,9 +140,9 @@ function beginFollowing() {
             json: extend(obj._source || {}, p)
           }, function(e, r, b) {
             if (e) {
-              console.error(e.message);
+              console.error(e.message, p);
             } else if (b.error) {
-              console.error(b.error);
+              console.error(b.error, p);
             } else {
               console.log('ADD', p.name, r.statusCode);
             }
