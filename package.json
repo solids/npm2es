@@ -1,6 +1,6 @@
 {
   "name": "npm2es",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "push npm package metadata into elasticsearch for querying",
   "main": "index.js",
   "scripts": {
