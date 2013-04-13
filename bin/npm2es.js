@@ -20,6 +20,9 @@ if (typeof since === 'undefined') {
     url : seqUrl,
     json: true
   }, function(e, r, o) {
+    if (!r) {
+      return console.error('ERROR:', 'could not connect to elasticsearch (' + argv.es + ')');
+    }
 
     if (!e && o && o._source && o._source.value) {
       since = o._source.value;
@@ -35,7 +38,13 @@ if (typeof since === 'undefined') {
     json : {
       value: since
     }
-  }, beginFollowing);
+  }, function(e, r, o) {
+
+    if (e) {
+      throw e;
+    }
+    beginFollowing();
+  });
 }
 
 function beginFollowing() {
@@ -109,7 +118,7 @@ function beginFollowing() {
         // 2) for the tarball
         // skip a re-index for #2
         if (!e && obj && obj._source && obj._source.version === p.version) {
-          console.log('SKIP VERSION: ' + change.doc._id);
+          console.log('SKIP VERSION:', change.doc._id, p.version);
           that.resume();
         } else {
           obj = obj || {};
