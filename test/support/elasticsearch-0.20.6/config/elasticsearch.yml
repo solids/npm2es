@@ -219,7 +219,7 @@
 
 # Set a custom port to listen for HTTP traffic:
 #
-# http.port: 9200
+http.port: 10002
 
 # Set a custom allowed content length:
 #
@@ -316,7 +316,7 @@
 #
 # 1. Disable multicast discovery (enabled by default):
 #
-# discovery.zen.ping.multicast.enabled: false
+discovery.zen.ping.multicast.enabled: false
 #
 # 2. Configure an initial list of master nodes in the cluster
 #    to perform discovery when new nodes (master or data) are started:
