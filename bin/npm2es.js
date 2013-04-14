@@ -64,7 +64,6 @@ function beginFollowing() {
     }
 
     var that = this;
-    this.pause();
 
     if (!change.id) {
       return console.log('SKIP', change);
@@ -88,6 +87,7 @@ function beginFollowing() {
 
     // Remove the document from elasticsearch
     if (change.deleted) {
+      this.pause()
       request.del(argv.es + '/package/' + change.id, function(err) {
         if (!err) {
           console.log('DELETED', change.id);
@@ -104,10 +104,10 @@ function beginFollowing() {
 
       if (!p || !p.name) {
         console.log('SKIP: ' + change.doc._id);
-        that.resume();
         return;
       }
 
+      this.pause();
       request.get({
         url: argv.es + '/package/' + p.name,
         json: true
