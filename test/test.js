@@ -190,3 +190,92 @@ test('index all changes', function(t) {
   });
 });
 
+
+test('ensure name mapping (new)', function(t) {
+  prepareCouch(function(e, couch) {
+    t.ok(!e);
+
+    prepareElasticSearch(true, function(e, elasticsearch) {
+      t.ok(!e);
+
+      var p = launch([
+        '--couch=http://localhost:10001/registry',
+        '--es=http://localhost:10002/npm',
+        '--since=0',
+        '--interval=100'
+      ]);
+
+      setTimeout(function wait() {
+        request.get({
+          url: 'http://localhost:10002/npm/package/_mapping',
+          json: true
+        }, function(e, r, o) {
+
+          if (!e && !o.error) {
+            t.equal(o['package'].properties.name.type, 'multi_field');
+            p.kill();
+            couch.kill();
+            elasticsearch.kill();
+            t.end();
+          } else {
+            setTimeout(wait, 100);
+          }
+        })
+      }, 100);
+    });
+  });
+});
+
+test('ensure name mapping (existing)', function(t) {
+  prepareCouch(function(e, couch) {
+    t.ok(!e);
+
+    prepareElasticSearch(false, function(e, elasticsearch) {
+      t.ok(!e);
+
+      request.get({
+        url : 'http://localhost:10002/npm/package/_mapping',
+        json: true
+      }, function(e, r, mapping) {
+
+
+        var p = launch([
+          '--couch=http://localhost:10001/registry',
+          '--es=http://localhost:10002/npm',
+          '--since=0',
+          '--interval=100'
+        ]);
+
+        setTimeout(function wait() {
+          request.get({
+            url: 'http://localhost:10002/npm/package/_mapping',
+            json: true
+          }, function(e, r, o) {
+
+            if (!e && !o.error) {
+              t.equal(o['package'].properties.name.type, 'multi_field');
+
+              t.equal(
+                Object.keys(o['package'].properties).length,
+                Object.keys(mapping['package'].properties).length
+              );
+
+              p.kill();
+              couch.kill();
+              elasticsearch.kill();
+              t.end();
+            } else {
+              setTimeout(wait, 100);
+            }
+          })
+        }, 100);
+      });
+
+    });
+
+  });
+});
+
+
+
+

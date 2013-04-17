@@ -48,6 +48,40 @@ if (typeof since === 'undefined') {
 }
 
 function beginFollowing() {
+
+  request.get({
+    url: argv.es + '/package/_mapping',
+    json: true
+  }, function(e, r, o) {
+    var nameObj = {
+      type: "multi_field",
+      fields : {
+        name : { type : "string", index : "analyzed" },
+        untouched : { type : "string", index : "not_analyzed" }
+      }
+    };
+
+    if (!e && !o.error && o.properties) {
+      o['package'].properies.name = nameObj
+    } else {
+      o = {
+        "package" : {
+          properties : {
+            name: nameObj
+          }
+        }
+      };
+    }
+
+    request.put({
+      url : argv.es + '/package/_mapping',
+      json : o
+    }, function() {})
+
+  });
+
+
+
   console.log('BEGIN FOLLOWING @', since);
   var last = since;
   follow({
