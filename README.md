@@ -8,7 +8,7 @@ push npm package metadata into elasticsearch for querying
 
 # use
 
-`USAGE: npm2es --couchdb="http://host:port/db" --es="http://host:port/index"`
+`USAGE: npm2es --couch="http://host:port/db" --es="http://host:port/index"`
 
 ## optional
 
@@ -16,7 +16,7 @@ push npm package metadata into elasticsearch for querying
 
 ## example
 
-`npm2es --couchdb="http://localhost:5984/registry" --es="http://localhost:9200/npm"`
+`npm2es --couch="http://localhost:5984/registry" --es="http://localhost:9200/npm"`
 
 This will attach to the provided couchdb's `_changes` feed and automatically put every
 package into elasticsearch for indexing.  This script will run for as long as you let it, automatically applying updates to the search index.
