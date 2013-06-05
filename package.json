@@ -25,7 +25,7 @@
   "readmeFilename": "README.md",
   "dependencies": {
     "follow": "~0.9.0",
-    "request": "~2.16.6",
+    "request": "~2.21",
     "optimist": "~0.3.7",
     "npm-normalize": "~0.2.0",
     "extend": "~1.1.3"
