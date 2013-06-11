@@ -89,6 +89,26 @@ test('ensure since is written when --since is provided', function(t) {
   });
 });
 
+test('ensure index is created on start', function(t) {
+  prepareElasticSearch(true, function(e, elasticsearch) {
+    var p = launch([
+      '--couch=http://blarg',
+      '--es=http://localhost:10002/non-existing-index'
+    ]);
+
+    p.on('close', function() {
+      request.get({
+        url: "http://localhost:10002/non-existing-index/_status",
+        json : true
+      }, function(e, r, o) {
+        elasticsearch.kill();
+        t.equal(r.statusCode, 200);
+        p.kill();
+        t.end();
+      });
+    });
+  });
+});
 
 test('since is written every X _changes', function(t) {
   prepareCouch(function(e, proc) {
