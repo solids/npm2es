@@ -20,7 +20,7 @@ var launch = function(args) {
 
 
 var prepareCouch = function(fn) {
-  var couchdb = spawn('couchdb', ['-n',
+  var couchdb = spawn('couchdb', [
     '-a', __dirname + '/support/couch/test.ini'
   ], {
     cwd : __dirname + '/support/couch/',
