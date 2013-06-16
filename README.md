@@ -26,8 +26,7 @@ package into elasticsearch for indexing.  This script will run for as long as yo
 First off, you'll want the following installed
 
   * `couchdb` (i.e. `which couchdb` should work)
-  * `java` (i.e. `which java` should should)
-  * `mocha` (`npm install -g mocha`)
+  * `java` (i.e. `which java` should work)
 
 Now we can run the test, just run `npm test`
 
