@@ -15,36 +15,42 @@ var follow = require('follow'),
     interval = argv.interval || 1000,
     seqUrl = argv.es + '/config/sequence';
 
-if (typeof since === 'undefined') {
-  request.get({
-    url : seqUrl,
-    json: true
-  }, function(e, r, o) {
-    if (!r) {
-      return console.error('ERROR:', 'could not connect to elasticsearch (' + argv.es + ')');
-    }
+createIndexIfDoesNotExist(function() {
+  setupSinceValue(beginFollowing);
+});
 
-    if (!e && o && o._source && o._source.value) {
-      since = o._source.value;
-    } else {
-      since = 0;
-    }
-    beginFollowing();
-  });
+function setupSinceValue(callback) {
+  if (typeof since === 'undefined') {
+    request.get({
+      url : seqUrl,
+      json: true
+    }, function(e, r, o) {
+      if (!r) {
+        return console.error('ERROR:', 'could not connect to elasticsearch (' + argv.es + ')');
+      }
 
-} else {
-  request.put({
-    url : seqUrl,
-    json : {
-      value: since
-    }
-  }, function(e, r, o) {
+      if (!e && o && o._source && o._source.value) {
+        since = o._source.value;
+      } else {
+        since = 0;
+      }
+      callback();
+    });
 
-    if (e) {
-      throw e;
-    }
-    beginFollowing();
-  });
+  } else {
+    request.put({
+      url : seqUrl,
+      json : {
+        value: since
+      }
+    }, function(e, r, o) {
+
+      if (e) {
+        throw e;
+      }
+      callback();
+    });
+  }
 }
 
 function beginFollowing() {
@@ -185,5 +191,26 @@ function beginFollowing() {
         }
       });
     }
+  });
+}
+
+function createIndexIfDoesNotExist(callback) {
+  request.get(argv.es + '/_status', function(err, res, body) {
+    if (err || res.statusCode != 404) {
+      callback();
+      return;
+    }
+    request.put(argv.es, function(err, res, body) {
+      if (err || res.statusCode != 200) {
+        console.error(
+          'Cannot create index: %s %s',
+          err || res.statusCode,
+          body
+        );
+      } else {
+        console.log('Created elasticsearch index %s', argv.es);
+      }
+      callback();
+    });
   });
 }
