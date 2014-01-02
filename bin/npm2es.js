@@ -163,14 +163,6 @@ function beginFollowing() {
         } else {
           obj = obj || {};
 
-          if (p.dependencies) {
-            p.dependencies = Object.keys(p.dependencies);
-          }
-
-          if (p.devDependencies) {
-            p.devDependencies = Object.keys(p.devDependencies);
-          }
-
           if (p.time) {
             delete p.time;
           }
