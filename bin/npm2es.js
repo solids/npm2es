@@ -93,7 +93,8 @@ function beginFollowing() {
   follow({
     db: argv.couch,
     since: since,
-    include_docs: true
+    include_docs: true,
+    inactivity_ms: 1000 * 60 * 60
   },  function(err, change) {
     if (err) {
       return console.error('ERROR:', err.message, argv.couch);
