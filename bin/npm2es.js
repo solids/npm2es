@@ -26,7 +26,8 @@ function setupSinceValue(callback) {
       json: true
     }, function(e, r, o) {
       if (!r) {
-        return console.error('ERROR:', 'could not connect to elasticsearch (' + argv.es + ')');
+        console.error('ERROR:', 'could not connect to elasticsearch (' + argv.es + ')');
+        return console.error(o || e);
       }
 
       if (!e && o && o._source && o._source.value) {
