@@ -1,6 +1,6 @@
 {
   "name": "npm2es",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "push npm package metadata into elasticsearch for querying",
   "main": "index.js",
   "scripts": {
@@ -24,7 +24,7 @@
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
-    "follow": "~0.9.0",
+    "follow": "~0.10.4",
     "request": "~2.21",
     "optimist": "~0.3.7",
     "npm-normalize": "~0.2.0",

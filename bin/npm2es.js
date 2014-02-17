@@ -97,12 +97,13 @@ function beginFollowing() {
     include_docs: true,
     inactivity_ms: 1000 * 60 * 60
   },  function(err, change) {
+
     if (err) {
       return console.error('ERROR:', err.message, argv.couch);
     }
 
     if (!change) {
-      return;
+      return console.warn('WARNING: invalid change');
     }
 
     var that = this;
@@ -119,8 +120,8 @@ function beginFollowing() {
           value: last
         }
       }, function(e, r, o) {
-        if (e || !o.ok) {
-          return console.error('ERROR', 'could not save latest sequence');
+        if (e || r.statusCode !== 200) {
+          return console.error('ERROR', 'could not save latest sequence', e, o);
         }
 
         console.log('SYNC', last);
