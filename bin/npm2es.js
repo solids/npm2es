@@ -13,7 +13,8 @@ var follow = require('follow'),
     extend = require('extend'),
     since = argv.since,
     interval = argv.interval || 1000,
-    seqUrl = argv.es + '/config/sequence';
+    seqUrl = argv.es + '/config/sequence',
+    searchSpecificFields = ['stars', 'dlScore', 'dlDay', 'dlWeek'];
 
 createIndexIfDoesNotExist(function() {
   setupSinceValue(beginFollowing);
@@ -150,6 +151,8 @@ function beginFollowing() {
         return;
       }
 
+      populateSearchFieldsIfDoNotExist(p);
+
       this.pause();
       request.get({
         url: argv.es + '/package/' + p.name,
@@ -207,5 +210,14 @@ function createIndexIfDoesNotExist(callback) {
       }
       callback();
     });
+  });
+}
+
+function populateSearchFieldsIfDoNotExist(package) {
+  searchSpecificFields.forEach(function(field)
+  {
+    if (!(field in package)) {
+      package[field] = 0; // populate with zero by default
+    }
   });
 }
