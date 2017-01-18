@@ -95,7 +95,7 @@ function beginFollowing() {
     db: argv.couch,
     since: since,
     include_docs: true,
-    inactivity_ms: 1000 * 60 * 60
+    inactivity_ms: argv.timeout || 1000 * 60 * 60
   },  function(err, change) {
 
     if (err) {
