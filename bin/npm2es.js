@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 
 var argv = require('optimist').argv;
-if (!argv.couch || !argv.es) {
+
+const ES = argv.es || process.env.ES
+
+if (!argv.couch || !ES) {
   return console.log('USAGE: npm2es --couch="<url to couch>" --es="<url to elasticsearch>" [--interval=1000]');
 }
 
@@ -13,7 +16,7 @@ var follow = require('follow'),
     extend = require('extend'),
     since = argv.since,
     interval = argv.interval || 1000,
-    seqUrl = argv.es + '/config/sequence';
+    seqUrl = ES + '/config/sequence';
 
 createIndexIfDoesNotExist(function() {
   setupSinceValue(beginFollowing);
@@ -26,7 +29,7 @@ function setupSinceValue(callback) {
       json: true
     }, function(e, r, o) {
       if (!r) {
-        console.error('ERROR:', 'could not connect to elasticsearch (' + argv.es + ')');
+        console.error('ERROR:', 'could not connect to elasticsearch (' + ES + ')');
         return console.error(o || e);
       }
 
@@ -57,7 +60,7 @@ function setupSinceValue(callback) {
 function beginFollowing() {
 
   request.get({
-    url: argv.es + '/package/_mapping',
+    url: ES + '/package/_mapping',
     json: true
   }, function(e, r, o) {
     var nameObj = {
@@ -81,7 +84,7 @@ function beginFollowing() {
     }
 
     request.put({
-      url : argv.es + '/package/_mapping',
+      url : ES + '/package/_mapping',
       json : o
     }, function() {})
 
@@ -131,7 +134,7 @@ function beginFollowing() {
     // Remove the document from elasticsearch
     if (change.deleted) {
       this.pause()
-      request.del(argv.es + '/package/' + change.id, function(err) {
+      request.del(ES + '/package/' + change.id, function(err) {
         if (!err) {
           console.log('DELETED', change.id);
         } else {
@@ -152,7 +155,7 @@ function beginFollowing() {
 
       this.pause();
       request.get({
-        url: argv.es + '/package/' + p.name,
+        url: ES + '/package/' + p.name,
         json: true
       }, function(e,b, obj) {
 
@@ -171,7 +174,7 @@ function beginFollowing() {
           }
 
           request.put({
-            url: argv.es + '/package/' + p.name,
+            url: ES + '/package/' + p.name,
             json: extend(obj._source || {}, p)
           }, function(e, r, b) {
             if (e) {
@@ -190,12 +193,12 @@ function beginFollowing() {
 }
 
 function createIndexIfDoesNotExist(callback) {
-  request.get(argv.es + '/_status', function(err, res, body) {
+  request.get(ES + '/_status', function(err, res, body) {
     if (err || res.statusCode != 404) {
       callback();
       return;
     }
-    request.put(argv.es, function(err, res, body) {
+    request.put(ES, function(err, res, body) {
       if (err || res.statusCode != 200) {
         console.error(
           'Cannot create index: %s %s',
@@ -203,7 +206,7 @@ function createIndexIfDoesNotExist(callback) {
           body
         );
       } else {
-        console.log('Created elasticsearch index %s', argv.es);
+        console.log('Created elasticsearch index %s', ES);
       }
       callback();
     });
