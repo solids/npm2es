@@ -153,6 +153,11 @@ function beginFollowing() {
         return;
       }
 
+      // Encoding to allow scoped packages to be indexed by elasticsearch
+      if(p.name[0] == '@') {
+        p.name = p.name.replace('/','%2f')
+      }
+
       this.pause();
       request.get({
         url: ES + '/package/' + p.name,
